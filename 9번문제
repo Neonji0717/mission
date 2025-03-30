@@ -1,0 +1,71 @@
+import random
+import numpy as np
+
+# 거리 행렬 (예제 데이터, 필요시 수정 가능)
+distance_matrix = np.array([
+    [0, 2, 9, 10, 7],
+    [2, 0, 6, 4, 3],
+    [9, 6, 0, 8, 5],
+    [10, 4, 8, 0, 6],
+    [7, 3, 5, 6, 0]
+])
+
+POPULATION_SIZE = 10
+MUTATION_RATE = 0.2
+GENERATIONS = 100
+
+# 초기 개체 생성
+def create_individual(num_cities):
+    individual = list(range(num_cities))
+    random.shuffle(individual)
+    return individual
+
+# 경로 비용 계산
+def fitness(individual):
+    cost = 0
+    for i in range(len(individual)):
+        cost += distance_matrix[individual[i-1], individual[i]]
+    return cost
+
+# 선택 (룰렛 휠 선택)
+def selection(population):
+    population = sorted(population, key=fitness)
+    return population[:2]  # 상위 2개 선택
+
+# 교차 (순열 교차)
+def crossover(parent1, parent2):
+    size = len(parent1)
+    start, end = sorted(random.sample(range(size), 2))
+    child = [None] * size
+    child[start:end] = parent1[start:end]
+    pos = end
+    for gene in parent2:
+        if gene not in child:
+            if pos >= size:
+                pos = 0
+            child[pos] = gene
+            pos += 1
+    return child
+
+# 변이 (두 개의 랜덤한 위치를 교환)
+def mutate(individual):
+    if random.random() < MUTATION_RATE:
+        i, j = random.sample(range(len(individual)), 2)
+        individual[i], individual[j] = individual[j], individual[i]
+    return individual
+
+# 유전자 알고리즘 실행
+def genetic_algorithm():
+    population = [create_individual(len(distance_matrix)) for _ in range(POPULATION_SIZE)]
+    for _ in range(GENERATIONS):
+        new_population = []
+        for _ in range(POPULATION_SIZE // 2):
+            parent1, parent2 = selection(population)
+            child1, child2 = crossover(parent1, parent2), crossover(parent2, parent1)
+            new_population.extend([mutate(child1), mutate(child2)])
+        population = new_population
+    best_individual = min(population, key=fitness)
+    return best_individual, fitness(best_individual)
+
+best_path, best_cost = genetic_algorithm()
+print(f'최적 경로: {best_path} with cost {best_cost}')
